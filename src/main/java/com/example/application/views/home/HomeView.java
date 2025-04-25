@@ -1,5 +1,6 @@
 package com.example.application.views.home;
 
+import com.example.application.views.MainLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
@@ -9,9 +10,11 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 @PageTitle("Home")
-@Route("")
+@Route(value = "", layout = MainLayout.class)
+@AnonymousAllowed
 @Menu(order = 0, icon = LineAwesomeIconUrl.FILE)
 public class HomeView extends VerticalLayout {
 

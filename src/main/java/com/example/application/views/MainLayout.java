@@ -1,49 +1,57 @@
 package com.example.application.views;
 
+import com.example.application.views.home.HomeView;
+import com.example.application.views.henkilöidenmittaustiedot.HenkiloidenmittaustiedotView;
+import com.example.application.views.measurements.MeasurementView;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.Footer;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Header;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.SvgIcon;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
-import com.vaadin.flow.server.menu.MenuConfiguration;
-import com.vaadin.flow.server.menu.MenuEntry;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import java.util.List;
 
 /**
- * The main view is a top-level placeholder for other views.
+ * Sovelluksen päälayout – vasemman laidan sivunavigaatio + otsikkopalkki.
  */
 @Layout
 @AnonymousAllowed
 public class MainLayout extends AppLayout {
 
-    private H1 viewTitle;
+    private final H1 viewTitle = new H1();
 
     public MainLayout() {
         setPrimarySection(Section.DRAWER);
-        addDrawerContent();
         addHeaderContent();
+        addDrawerContent();
     }
 
+    /* ------------------------------------------------------------------ */
+    /* HEADER                                                             */
+    /* ------------------------------------------------------------------ */
     private void addHeaderContent() {
         DrawerToggle toggle = new DrawerToggle();
         toggle.setAriaLabel("Menu toggle");
 
-        viewTitle = new H1();
         viewTitle.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.NONE);
 
         addToNavbar(true, toggle, viewTitle);
     }
 
+    /* ------------------------------------------------------------------ */
+    /* DRAWER / NAVIGAATIO                                                */
+    /* ------------------------------------------------------------------ */
     private void addDrawerContent() {
-        Span appName = new Span("My App");
+        Span appName = new Span("Measurement-App");
         appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
         Header header = new Header(appName);
 
@@ -52,27 +60,33 @@ public class MainLayout extends AppLayout {
         addToDrawer(header, scroller, createFooter());
     }
 
+    /** Luo vasemman reunan SideNav. */
     private SideNav createNavigation() {
         SideNav nav = new SideNav();
 
-        List<MenuEntry> menuEntries = MenuConfiguration.getMenuEntries();
-        menuEntries.forEach(entry -> {
-            if (entry.icon() != null) {
-                nav.addItem(new SideNavItem(entry.title(), entry.path(), new SvgIcon(entry.icon())));
-            } else {
-                nav.addItem(new SideNavItem(entry.title(), entry.path()));
-            }
-        });
+        nav.addItem(new SideNavItem("Home", HomeView.class, icon(VaadinIcon.HOME)));
+        nav.addItem(new SideNavItem("Persons", HenkiloidenmittaustiedotView.class,
+                icon(VaadinIcon.USERS)));
+        nav.addItem(new SideNavItem("Measurements", MeasurementView.class,
+                icon(VaadinIcon.LINE_CHART)));
 
         return nav;
     }
 
-    private Footer createFooter() {
-        Footer layout = new Footer();
-
-        return layout;
+    /** Pieni apu-metodi ikonien luomiseen yhtenäisellä koolla. */
+    private Component icon(VaadinIcon vIcon) {
+        Icon icon = vIcon.create();
+        icon.setSize("var(--lumo-icon-size-s)");
+        return icon;
     }
 
+    private Footer createFooter() {
+        return new Footer();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Näytettävän näkymän otsikko                                         */
+    /* ------------------------------------------------------------------ */
     @Override
     protected void afterNavigation() {
         super.afterNavigation();
@@ -80,6 +94,7 @@ public class MainLayout extends AppLayout {
     }
 
     private String getCurrentPageTitle() {
-        return MenuConfiguration.getPageHeader(getContent()).orElse("");
+        PageTitle title = getContent().getClass().getAnnotation(PageTitle.class);
+        return title != null ? title.value() : "";
     }
 }
