@@ -13,10 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Sovelluslogiikka Person-entiteetille.
- * Sisältää kaksi nimisettiä:
- *   • savePerson / findPerson / deletePerson – käytössä UI-näkymissä
- *   • save / get / delete / list            – käytössä REST-rajapinnoissa
+ * Service layer for Person entity with standardized method names.
  */
 @Service
 @Transactional
@@ -29,65 +26,65 @@ public class PersonService {
     }
 
     /* ======================================================================
-     *  -----------  YHTENÄISET CRUD-METODIT (REST)  ------------------------
+     *  -----------  CORE CRUD METHODS  ------------------------
      * ==================================================================== */
 
+    /**
+     * Find a person by ID
+     */
     public Optional<Person> get(Long id) {
         return repository.findById(id);
     }
 
+    /**
+     * Save or update a person
+     */
     public Person save(Person person) {
         return repository.save(person);
     }
 
+    /**
+     * Delete a person by ID
+     */
     public void delete(Long id) {
         repository.deleteById(id);
     }
 
-    public List<Person> list() {
-        return repository.findAll();
-    }
-
-    /* ======================================================================
-     *  -----------  AIEMMIN KÄYTETYT NIMET (UI)  ----------------------------
-     * ==================================================================== */
-
-    public Person savePerson(Person person) {
-        return save(person);              // delegoidaan
-    }
-
-    public Optional<Person> findPerson(Long id) {
-        return get(id);
-    }
-
-    public void deletePerson(Long id) {
-        delete(id);
-    }
-
+    /**
+     * Get all persons sorted by last name and first name
+     */
     public List<Person> findAll() {
-        // oletusjärjestys sukunimi + etunimi
         return repository.findAll(Sort.by("lastName", "firstName"));
     }
 
     /* ======================================================================
-     *  -----------  Listaus & sivutus  -------------------------------------
+     *  -----------  Listing & Pagination  -------------------------------------
      * ==================================================================== */
 
-    /** Paginoitu listaus ilman filttereitä. */
+    /**
+     * Paginated list of all persons
+     */
     public Page<Person> listPersons(Pageable pageable) {
         return repository.findAll(pageable);
     }
 
-    /** Paginoitu listaus filttereillä. */
+    /**
+     * Paginated list of persons with filter
+     */
     public Page<Person> listPersons(Pageable pageable, Specification<Person> filter) {
         return repository.findAll(filter, pageable);
     }
 
-    /** Kaikki ilman sivutusta (alias listAll). */
+    /**
+     * List all persons without pagination
+     */
     public List<Person> listAll() {
-        return list();
+        return findAll();
     }
 
+    /**
+     * Count all persons
+     */
     public long count() {
         return repository.count();
     }
@@ -96,6 +93,9 @@ public class PersonService {
      *  -----------  Specification-filtterit (tarvittaessa)  -----------------
      * ==================================================================== */
 
+    /**
+     * List persons with last name and/or gender filters
+     */
     public Page<Person> listPersons(Pageable pageable,
                                     String lastNameFilter,
                                     String genderFilter) {

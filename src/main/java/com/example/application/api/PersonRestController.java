@@ -23,19 +23,19 @@ public class PersonRestController {
     }
 
     /* ───────────────────────────────────────────────
-     *  READ – listaus & yksittäinen
+     *  READ - listing & individual
      * ───────────────────────────────────────────── */
 
     /**
      * GET /api/persons
-     *  – tukee query-parametreja ?lastName= … &gender= … &page= … &size= …
+     *  - supports query parameters ?lastName= ... &gender= ... &page= ... &size= ...
      */
     @GetMapping
     public Page<Person> getAll(@RequestParam Optional<String> lastName,
                                @RequestParam Optional<String> gender,
                                Pageable pageable) {
 
-        /* 1) Kootaan dynaaminen Specification */
+        // Build dynamic specification for filtering
         Specification<Person> spec = Specification.where(null);
 
         if (lastName.isPresent() && !lastName.get().isBlank()) {
@@ -45,7 +45,6 @@ public class PersonRestController {
             spec = spec.and(PersonSpecifications.genderEquals(gender.get()));
         }
 
-        /* 2) Käytetään spesifikaatiota haussa */
         return service.listPersons(pageable, spec);
     }
 
@@ -56,7 +55,7 @@ public class PersonRestController {
     }
 
     /* ───────────────────────────────────────────────
-     *  CREATE / UPDATE / DELETE – entisellään
+     *  CREATE / UPDATE / DELETE
      * ───────────────────────────────────────────── */
 
     @ResponseStatus(HttpStatus.CREATED)
@@ -81,9 +80,9 @@ public class PersonRestController {
         service.delete(id);
     }
 
-    /* 404 */
+    /* 404 Exception */
     @ResponseStatus(HttpStatus.NOT_FOUND)
     private static class PersonNotFoundException extends RuntimeException {
-        PersonNotFoundException(Long id) { super("Henkilöä ei löytynyt: " + id); }
+        PersonNotFoundException(Long id) { super("Person not found: " + id); }
     }
 }

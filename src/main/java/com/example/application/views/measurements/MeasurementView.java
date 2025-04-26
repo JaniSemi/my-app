@@ -31,7 +31,7 @@ import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
-@PageTitle("Mittaukset")
+@PageTitle("Measurements")
 @Route(value = "measurements", layout = MainLayout.class)
 @RouteAlias(value = "measurements/:measurementID?", layout = MainLayout.class)
 @PermitAll
@@ -40,17 +40,17 @@ public class MeasurementView extends Div {
 
     private final Grid<Measurement> grid = new Grid<>(Measurement.class, false);
 
-    /* -------- filtteri -------- */
-    private final ComboBox<Person> personFilter = new ComboBox<>("Henkilö");
+    /* -------- filter -------- */
+    private final ComboBox<Person> personFilter = new ComboBox<>("Person");
 
-    /* -------- lomake -------- */
+    /* -------- form -------- */
     private ComboBox<Person> person;
     private NumberField      heightCm;
     private NumberField      weightKg;
     private DateTimePicker   measuredAt;
 
-    private final Button cancel = new Button("Peru");
-    private final Button save   = new Button("Tallenna");
+    private final Button cancel = new Button("Cancel");
+    private final Button save   = new Button("Save");
 
     private final BeanValidationBinder<Measurement> binder;
     private Measurement current;
@@ -70,11 +70,11 @@ public class MeasurementView extends Div {
         HorizontalLayout filters = new HorizontalLayout();
         personFilter.setItems(personService.findAll());
         personFilter.setItemLabelGenerator(p -> p.getFirstName() + " " + p.getLastName());
-        personFilter.setPlaceholder("Suodata henkilön mukaan");
+        personFilter.setPlaceholder("Filter by person");
         filters.add(personFilter);
         add(filters);
 
-        /* ---------- pää-layout ---------- */
+        /* ---------- main layout ---------- */
         SplitLayout split = new SplitLayout();
         createGrid(split);
         createEditor(split);
@@ -84,25 +84,25 @@ public class MeasurementView extends Div {
         binder = new BeanValidationBinder<>(Measurement.class);
         binder.bindInstanceFields(this);
 
-        // person-ComboBox manuaalinen binding
+        // person-ComboBox manual binding
         binder.forField(person)
-                .asRequired("Valitse henkilö")
+                .asRequired("Please select a person")
                 .bind(Measurement::getPerson, Measurement::setPerson);
 
-        /* ---------- grid selektio ---------- */
+        /* ---------- grid selection ---------- */
         grid.asSingleSelect().addValueChangeListener(e -> {
             current = e.getValue();
             binder.readBean(current);
         });
 
-        /* ---------- napit ---------- */
+        /* ---------- buttons ---------- */
         cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         cancel.addClickListener(e -> clearForm());
         save.addClickListener(e -> saveCurrent());
 
-        /* ---------- filtteri-kuuntelija ---------- */
+        /* ---------- filter-listener ---------- */
         personFilter.addValueChangeListener(e -> grid.getDataProvider().refreshAll());
     }
 
@@ -113,11 +113,11 @@ public class MeasurementView extends Div {
                         m.getPerson() != null
                                 ? m.getPerson().getFirstName() + " " + m.getPerson().getLastName()
                                 : ""))
-                .setHeader("Henkilö").setAutoWidth(true);
+                .setHeader("Person").setAutoWidth(true);
 
-        grid.addColumn("heightCm").setHeader("Pituus (cm)");
-        grid.addColumn("weightKg").setHeader("Paino (kg)");
-        grid.addColumn("measuredAt").setHeader("Mitattu");
+        grid.addColumn("heightCm").setHeader("Height (cm)");
+        grid.addColumn("weightKg").setHeader("Weight (kg)");
+        grid.addColumn("measuredAt").setHeader("Measured at");
 
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
 
@@ -140,17 +140,17 @@ public class MeasurementView extends Div {
 
         FormLayout form = new FormLayout();
 
-        person = new ComboBox<>("Henkilö");
+        person = new ComboBox<>("Person");
         person.setItems(personService.findAll());
         person.setItemLabelGenerator(p -> p.getFirstName() + " " + p.getLastName());
 
-        heightCm = new NumberField("Pituus (cm)");
+        heightCm = new NumberField("Height (cm)");
         heightCm.setStep(0.1);
 
-        weightKg = new NumberField("Paino (kg)");
+        weightKg = new NumberField("Weight (kg)");
         weightKg.setStep(0.1);
 
-        measuredAt = new DateTimePicker("Mitattu");
+        measuredAt = new DateTimePicker("Measured at");
 
         form.add(person, heightCm, weightKg, measuredAt);
         editorWrap.add(form, createButtons());
@@ -179,14 +179,14 @@ public class MeasurementView extends Div {
             binder.writeBean(current);
             measurementService.save(current);
 
-            Notification.show("Tallennettu", 2000, Position.TOP_CENTER);
+            Notification.show("Saved", 2000, Position.TOP_CENTER);
             clearForm();
             grid.getDataProvider().refreshAll();
         } catch (ObjectOptimisticLockingFailureException ex) {
-            Notification n = Notification.show("Samanaikainen muokkausvirhe");
+            Notification n = Notification.show("Concurrent modification error");
             n.addThemeVariants(NotificationVariant.LUMO_ERROR);
         } catch (ValidationException ex) {
-            Notification.show("Tarkista syötetyt arvot");
+            Notification.show("Please check the entered values");
         }
     }
 }

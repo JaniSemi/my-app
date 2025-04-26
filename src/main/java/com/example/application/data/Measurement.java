@@ -6,30 +6,23 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "measurements")
-public class Measurement {
+public class Measurement extends AbstractEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Positive(message = "Height must be greater than 0")
+    private double heightCm;                   // height in centimeters
 
-    @Positive(message = "Pituus täytyy olla suurempi kuin 0")
-    private double heightCm;                   // pituus senttimetreissä
-
-    @Positive(message = "Paino täytyy olla suurempi kuin 0")
-    private double weightKg;                   // paino kilogrammoina
+    @Positive(message = "Weight must be greater than 0")
+    private double weightKg;                   // weight in kilograms
 
     @PastOrPresent
     private LocalDateTime measuredAt = LocalDateTime.now();
 
-    /* ---------- Relaatio Personiin ---------- */
+    /* ---------- Relationship to Person ---------- */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
-
     @JoinColumn(name = "person_id", nullable = false)
     private Person person;
 
-    /* ---------- Getterit & setterit ---------- */
-    public Long getId() { return id; }
-
+    /* ---------- Getters & setters ---------- */
     public double getHeightCm() { return heightCm; }
     public void setHeightCm(double heightCm) { this.heightCm = heightCm; }
 
@@ -41,7 +34,4 @@ public class Measurement {
 
     public Person getPerson() { return person; }
     public void setPerson(Person person) { this.person = person; }
-
-    public void setId(Long id) {
-    }
 }

@@ -11,10 +11,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 /**
- * Sovellus-logiikkakerros {@link Measurement}-entiteetille.
- *  •  Yksinkertainen CRUD
- *  •  Paginointi + vapaaehtoiset filtteri-specifikaatiot
- *  •  Hakutapoja henkilö-ID:n perusteella
+ * Service layer for {@link Measurement} entity.
+ * Simplified with standardized method naming and reduced redundancy.
  */
 @Service
 public class MeasurementService {
@@ -25,49 +23,69 @@ public class MeasurementService {
         this.repository = repository;
     }
 
-    /* ────────────  CRUD  ──────────── */
+    /* ────────────  CORE CRUD OPERATIONS  ──────────── */
 
+    /**
+     * Get a measurement by ID
+     */
     public Optional<Measurement> get(Long id) {
         return repository.findById(id);
     }
 
+    /**
+     * Save or update a measurement
+     */
     public Measurement save(Measurement entity) {
         return repository.save(entity);
     }
 
+    /**
+     * Delete a measurement by ID
+     */
     public void delete(Long id) {
         repository.deleteById(id);
     }
 
-    /* ────────────  LISTAUKSET  ──────────── */
+    /* ────────────  LISTING OPERATIONS  ──────────── */
 
-    /** Kaikki mittaukset sivutettuna. */
+    /**
+     * List all measurements with pagination
+     */
     public Page<Measurement> list(Pageable pageable) {
         return repository.findAll(pageable);
     }
 
-    /** Listaus Specification-filtterillä (esim. pituus & paino). */
+    /**
+     * List measurements with a filter specification and pagination
+     */
     public Page<Measurement> list(Pageable pageable, Specification<Measurement> filter) {
         return repository.findAll(filter, pageable);
     }
 
-    /** Kaikki mittaukset tietylle henkilölle ilman paginointia. */
+    /**
+     * List all measurements for a specific person
+     */
     public List<Measurement> listByPerson(Long personId) {
         return repository.findByPersonId(personId);
     }
 
-    /** Kaikki mittaukset ilman paginointia. */
+    /**
+     * List all measurements without pagination
+     */
     public List<Measurement> list() {
         return repository.findAll();
     }
 
+    /**
+     * Count all measurements
+     */
     public long count() {
         return repository.count();
     }
 
-    /* ==========================================================
-     *  LISTA SUODATTIMELLA (personId)
-     * ======================================================== */
+    /**
+     * List measurements with person filter and pagination
+     */
     public Page<Measurement> list(Pageable pageable, Long personId) {
         if (personId == null) {
             return repository.findAll(pageable);

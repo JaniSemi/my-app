@@ -21,16 +21,16 @@ public class MeasurementRestController {
         this.service = service;
     }
 
-    /* ------- LISTAUS ------- */
+    /* ------- LISTING ------- */
 
     @GetMapping                        // GET /api/measurements
     public List<Measurement> all() {
-        return service.list();         // kaikki ilman sivutusta
+        return service.list();
     }
 
     @GetMapping("/paged")              // GET /api/measurements/paged?page=0&size=10
     public Page<Measurement> paged(Pageable pageable) {
-        return service.list(pageable); // kaikki sivutettuna
+        return service.list(pageable);
     }
 
     @GetMapping("/{id}")               // GET /api/measurements/55
@@ -39,13 +39,13 @@ public class MeasurementRestController {
                 .orElseThrow(() -> new MeasurementNotFoundException(id));
     }
 
-    /* Mittaukset tietylle henkilölle: GET /api/measurements/person/12 */
+    /* Measurements for a specific person: GET /api/measurements/person/12 */
     @GetMapping("/person/{personId}")
     public List<Measurement> byPerson(@PathVariable Long personId) {
         return service.listByPerson(personId);
     }
 
-    /* Mittaukset tietylle henkilölle sivutettuna: GET /api/measurements/person-paged/12?page=0&size=10 */
+    /* Paginated measurements for a specific person: GET /api/measurements/person-paged/12?page=0&size=10 */
     @GetMapping("/person-paged/{personId}")
     public Page<Measurement> byPersonPaged(@PathVariable Long personId, Pageable pageable) {
         return service.list(pageable, personId);
@@ -68,11 +68,11 @@ public class MeasurementRestController {
         Measurement existing = service.get(id)
                 .orElseThrow(() -> new MeasurementNotFoundException(id));
 
-        // kopioi päivitettävät kentät:
+        // copy updateable fields:
         existing.setHeightCm(m.getHeightCm());
         existing.setWeightKg(m.getWeightKg());
         existing.setMeasuredAt(m.getMeasuredAt());
-        existing.setPerson(m.getPerson());      // tai pelkkä person-id DTO:sta riippuen
+        existing.setPerson(m.getPerson());
 
         return service.save(existing);
     }
@@ -84,7 +84,7 @@ public class MeasurementRestController {
         service.delete(id);
     }
 
-    /* ------- 404 Poikkeus ------- */
+    /* ------- 404 Exception ------- */
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
     private static class MeasurementNotFoundException extends RuntimeException {

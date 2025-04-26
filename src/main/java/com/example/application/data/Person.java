@@ -8,19 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Henkilö – perustiedot + relaatiot mittauksiin.
+ * Person entity - basic information and relationship to measurements.
  */
 @Entity
 @Table(name = "persons")
-public class Person {
+public class Person extends AbstractEntity {
 
     /* --------------------------------------------------
-     *  Peruskentät
+     *  Basic fields
      * -------------------------------------------------- */
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @NotBlank
     @Column(nullable = false)
@@ -46,11 +42,11 @@ public class Person {
     private String occupation;
     private String role;
 
-    /** Voidaan käyttää esim. “tärkeä asiakas” -merkintään. */
+    /** Can be used to mark "important customer," etc. */
     private Boolean important = Boolean.FALSE;
 
     /* --------------------------------------------------
-     *  Apukenttä (ei tallennu kantaan)
+     *  Helper field (not stored in database)
      * -------------------------------------------------- */
     @Transient
     public int getAge() {
@@ -59,7 +55,7 @@ public class Person {
     }
 
     /* --------------------------------------------------
-     *  Relaatio mittauksiin
+     *  Relationship to measurements
      * -------------------------------------------------- */
     @OneToMany(mappedBy = "person",
             cascade = CascadeType.ALL,
@@ -68,13 +64,8 @@ public class Person {
     private List<Measurement> measurements = new ArrayList<>();
 
     /* --------------------------------------------------
-     *  Getterit & setterit
+     *  Getters & setters
      * -------------------------------------------------- */
-
-    public Long getId() { return id; }
-
-    /** Tarvitaan päivitys-operaatioissa (PUT). */
-    public void setId(Long id) { this.id = id; }
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
@@ -107,7 +98,7 @@ public class Person {
     public void setMeasurements(List<Measurement> measurements) { this.measurements = measurements; }
 
     /* --------------------------------------------------
-     *  Apumetodit relaatiolle
+     *  Helper methods for relationship
      * -------------------------------------------------- */
     public void addMeasurement(Measurement m) {
         m.setPerson(this);

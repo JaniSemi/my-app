@@ -1,6 +1,8 @@
 package com.example.application.views;
 
 import com.example.application.views.home.HomeView;
+import com.example.application.views.person.PersonView;
+import com.example.application.views.measurements.MeasurementView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -18,7 +20,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-/** Sovelluksen päälayout – vasemman laidan navigaatio + otsikkopalkki. */
+/** Main application layout - left-side navigation + header bar. */
 @Layout
 @AnonymousAllowed
 public class MainLayout extends AppLayout {
@@ -44,7 +46,7 @@ public class MainLayout extends AppLayout {
     }
 
     /* ------------------------------------------------------------------ */
-    /* DRAWER / NAVIGAATIO                                                */
+    /* DRAWER / NAVIGATION                                                */
     /* ------------------------------------------------------------------ */
     private void addDrawerContent() {
         Span appName = new Span("Measurement-App");
@@ -56,26 +58,19 @@ public class MainLayout extends AppLayout {
         addToDrawer(header, scroller, createFooter());
     }
 
-    /** Luo vasemman reunan SideNav. */
+    /** Create left-side SideNav. */
     private SideNav createNavigation() {
         SideNav nav = new SideNav();
 
-        /*  --- Huom! SideNavItem kannattaa luoda merkkijono-reitillä,
-             koska lista-näkymä ja editori jakavat saman luokan   --- */
-
+        // Use class references where possible instead of string paths
         nav.addItem(new SideNavItem("Home", HomeView.class, icon(VaadinIcon.HOME)));
-
-        //  persons – listan parametriton reitti
-        nav.addItem(new SideNavItem("Persons", "persons", icon(VaadinIcon.USERS)));
-
-        //  measurements – listan parametriton reitti
-        nav.addItem(new SideNavItem("Measurements", "measurements",
-                icon(VaadinIcon.LINE_CHART)));
+        nav.addItem(new SideNavItem("Persons", PersonView.class, icon(VaadinIcon.USERS)));
+        nav.addItem(new SideNavItem("Measurements", MeasurementView.class, icon(VaadinIcon.LINE_CHART)));
 
         return nav;
     }
 
-    /** Pieni apu ikonien luomiseen yhtenäisellä koolla. */
+    /** Helper for creating icons with consistent size. */
     private Component icon(VaadinIcon vIcon) {
         Icon icon = vIcon.create();
         icon.setSize("var(--lumo-icon-size-s)");
@@ -84,12 +79,12 @@ public class MainLayout extends AppLayout {
 
     private Footer createFooter() {
         Footer footer = new Footer();
-        footer.add(new Span("© 2025 Vaadinharjoitus rock rock"));
+        footer.add(new Span("© 2025 Measurement App"));
         return footer;
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Näytettävän näkymän otsikko                                        */
+    /*  Current view title                                                */
     /* ------------------------------------------------------------------ */
     @Override
     protected void afterNavigation() {

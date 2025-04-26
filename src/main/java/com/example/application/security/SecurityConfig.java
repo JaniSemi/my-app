@@ -17,15 +17,15 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 @EnableWebSecurity
 public class SecurityConfig extends VaadinWebSecurity {
 
-    /* ----------------------------------------------------------
-     * 1) Demo-käyttäjät in-memory
-     * -------------------------------------------------------- */
+    /**
+     * Configure in-memory users for demo purposes
+     */
     @Bean
     public UserDetailsService userDetailsService() {
-        var enc = passwordEncoder();
+        var encoder = passwordEncoder();
         return new InMemoryUserDetailsManager(
-                User.withUsername("user").password(enc.encode("user")).roles("USER").build(),
-                User.withUsername("admin").password(enc.encode("admin")).roles("ADMIN").build()
+                User.withUsername("user").password(encoder.encode("user")).roles("USER").build(),
+                User.withUsername("admin").password(encoder.encode("admin")).roles("ADMIN").build()
         );
     }
 
@@ -34,34 +34,33 @@ public class SecurityConfig extends VaadinWebSecurity {
         return new BCryptPasswordEncoder();
     }
 
-    /* ----------------------------------------------------------
-     * 2) Suojaussäännöt
-     * -------------------------------------------------------- */
+    /**
+     * Configure security rules
+     */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-
-        // 1) julkiset polut
+        // Public paths
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/",              // <-- root
-                        "/login",         // login-sivu
-                        "/images/**")     // mahdolliset kuvat
+                .requestMatchers("/",         // root
+                        "/login",             // login page
+                        "/images/**")         // images
                 .permitAll()
         );
 
-        // 2) Vaadinin oletus-konfig (lisää anyRequest().authenticated())
+        // Default Vaadin config (adds anyRequest().authenticated())
         super.configure(http);
 
-        // 3) lomake-login + logout
+        // Form login and logout config
         http.formLogin(form -> form.loginPage("/login")
-                        .defaultSuccessUrl("/", true))   // palaudu Homeen
+                        .defaultSuccessUrl("/", true))   // return to Home after login
                 .logout(Customizer.withDefaults());
 
         setLoginView(http, LoginView.class);
     }
 
-    /* ----------------------------------------------------------
-     * 3) Tarjoa AuthenticationContext muille beaneille
-     * -------------------------------------------------------- */
+    /**
+     * Provide AuthenticationContext to other beans
+     */
     @Bean
     public AuthenticationContext authContext() {
         return new AuthenticationContext();
