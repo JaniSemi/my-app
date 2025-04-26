@@ -17,9 +17,7 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 @EnableWebSecurity
 public class SecurityConfig extends VaadinWebSecurity {
 
-    /**
-     * Configure in-memory users for demo purposes
-     */
+    /** Demo-käyttäjät */
     @Bean
     public UserDetailsService userDetailsService() {
         var encoder = passwordEncoder();
@@ -34,33 +32,26 @@ public class SecurityConfig extends VaadinWebSecurity {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Configure security rules
-     */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        // Public paths
+        // 1) Julkiset reitit ennen Vaadinin anyRequest()
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/",         // root
-                        "/login",             // login page
-                        "/images/**")         // images
-                .permitAll()
+                .requestMatchers("/", "/login", "/images/**").permitAll()
         );
 
-        // Default Vaadin config (adds anyRequest().authenticated())
+        // 2) Vaadinin omat turvatoimet (CSRF, staattiset resurssit, anyRequest().authenticated())
         super.configure(http);
 
-        // Form login and logout config
-        http.formLogin(form -> form.loginPage("/login")
-                        .defaultSuccessUrl("/", true))   // return to Home after login
+        // 3) Login/Logout
+        http.formLogin(form -> form
+                        .loginPage("/login")
+                )
                 .logout(Customizer.withDefaults());
 
+        // 4) Määritä LoginView
         setLoginView(http, LoginView.class);
     }
 
-    /**
-     * Provide AuthenticationContext to other beans
-     */
     @Bean
     public AuthenticationContext authContext() {
         return new AuthenticationContext();

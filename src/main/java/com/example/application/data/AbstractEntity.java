@@ -1,30 +1,30 @@
 package com.example.application.data;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Version;
 
 @MappedSuperclass
 public abstract class AbstractEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "idgenerator")
-    // The initial value is to account for data.sql demo data ids
-    @SequenceGenerator(name = "idgenerator", initialValue = 1000)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(updatable = false, nullable = false)
     private Long id;
 
+    /**
+     * Optimistic locking version.
+     * DEFAULT 0 varmistaa, että olemassa olevat rivit saavat arvon 0.
+     */
     @Version
-    private int version;
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int version = 0;
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public int getVersion() {
@@ -33,8 +33,8 @@ public abstract class AbstractEntity {
 
     @Override
     public int hashCode() {
-        if (getId() != null) {
-            return getId().hashCode();
+        if (id != null) {
+            return id.hashCode();
         }
         return super.hashCode();
     }
@@ -42,11 +42,11 @@ public abstract class AbstractEntity {
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof AbstractEntity that)) {
-            return false; // null or not an AbstractEntity class
+            return false;
         }
-        if (getId() != null) {
-            return getId().equals(that.getId());
+        if (id != null) {
+            return id.equals(that.id);
         }
-        return super.equals(that);
+        return super.equals(obj);
     }
 }

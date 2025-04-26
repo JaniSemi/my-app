@@ -5,23 +5,20 @@ import com.example.application.views.person.PersonView;
 import com.example.application.views.measurements.MeasurementView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.applayout.AppLayout.Section;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.Footer;
-import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Header;
+import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
-import com.vaadin.flow.router.Layout;
-import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-/** Main application layout - left-side navigation + header bar. */
-@Layout
 @AnonymousAllowed
 public class MainLayout extends AppLayout {
 
@@ -33,59 +30,53 @@ public class MainLayout extends AppLayout {
         addDrawerContent();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* HEADER                                                             */
-    /* ------------------------------------------------------------------ */
     private void addHeaderContent() {
         DrawerToggle toggle = new DrawerToggle();
         toggle.setAriaLabel("Menu toggle");
 
-        viewTitle.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.NONE);
-
+        viewTitle.addClassNames(
+                LumoUtility.FontSize.LARGE,
+                LumoUtility.Margin.NONE
+        );
         addToNavbar(true, toggle, viewTitle);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* DRAWER / NAVIGATION                                                */
-    /* ------------------------------------------------------------------ */
     private void addDrawerContent() {
         Span appName = new Span("Measurement-App");
-        appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
+        appName.addClassNames(
+                LumoUtility.FontWeight.SEMIBOLD,
+                LumoUtility.FontSize.LARGE
+        );
         Header header = new Header(appName);
 
         Scroller scroller = new Scroller(createNavigation());
 
-        addToDrawer(header, scroller, createFooter());
+        Footer footer = new Footer(new Span("© 2025 Measurement App"));
+        footer.addClassNames(
+                LumoUtility.Background.CONTRAST_5,
+                LumoUtility.Padding.Vertical.SMALL
+        );
+        footer.getStyle()
+                .set("color", "white")
+                .set("text-align", "center");
+
+        addToDrawer(header, scroller, footer);
     }
 
-    /** Create left-side SideNav. */
     private SideNav createNavigation() {
         SideNav nav = new SideNav();
-
-        // Use class references where possible instead of string paths
         nav.addItem(new SideNavItem("Home", HomeView.class, icon(VaadinIcon.HOME)));
         nav.addItem(new SideNavItem("Persons", PersonView.class, icon(VaadinIcon.USERS)));
         nav.addItem(new SideNavItem("Measurements", MeasurementView.class, icon(VaadinIcon.LINE_CHART)));
-
         return nav;
     }
 
-    /** Helper for creating icons with consistent size. */
     private Component icon(VaadinIcon vIcon) {
         Icon icon = vIcon.create();
         icon.setSize("var(--lumo-icon-size-s)");
         return icon;
     }
 
-    private Footer createFooter() {
-        Footer footer = new Footer();
-        footer.add(new Span("© 2025 Measurement App"));
-        return footer;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /*  Current view title                                                */
-    /* ------------------------------------------------------------------ */
     @Override
     protected void afterNavigation() {
         super.afterNavigation();
@@ -93,7 +84,7 @@ public class MainLayout extends AppLayout {
     }
 
     private String getCurrentPageTitle() {
-        PageTitle title = getContent().getClass().getAnnotation(PageTitle.class);
-        return title != null ? title.value() : "";
+        var annotation = getContent().getClass().getAnnotation(com.vaadin.flow.router.PageTitle.class);
+        return annotation != null ? annotation.value() : "";
     }
 }

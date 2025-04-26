@@ -19,7 +19,7 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
-import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
@@ -29,7 +29,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.Optional;
@@ -37,42 +37,38 @@ import java.util.Optional;
 @PageTitle("Persons")
 @Route(value = "persons", layout = MainLayout.class)
 @RouteAlias(value = "persons/:personID?/:action?(edit)", layout = MainLayout.class)
-@PermitAll
+@RolesAllowed({"USER","ADMIN"})
 @Uses(Icon.class)
 public class PersonView extends Div implements BeforeEnterObserver {
 
-    /* ------------- constants ------------- */
     private static final String PERSON_ID       = "personID";
     private static final String PERSON_EDIT_URL = "persons/%s/edit";
 
-    /* ------------- filters ---------------- */
     private final TextField      lastNameFilter = new TextField();
     private final Select<String> genderFilter   = new Select<>();
 
-    /* ------------- grid + form ----------- */
-    private final Grid<Person> grid = new Grid<>(Person.class, false);
+    private final Grid<Person>   grid = new Grid<>(Person.class, false);
 
-    private TextField  firstName;
-    private TextField  lastName;
-    private TextField  email;
-    private NumberField age;
+    private TextField    firstName;
+    private TextField    lastName;
+    private TextField    email;
+    private IntegerField ageField;
     private Select<String> gender;
-    private DatePicker dateOfBirth;
+    private DatePicker   dateOfBirth;
 
     private final Button cancel = new Button("Cancel");
     private final Button save   = new Button("Save");
 
-    private final BeanValidationBinder<Person> binder;
+    private BeanValidationBinder<Person> binder;
     private Person currentPerson;
 
     private final PersonService personService;
 
-    /* =================================================================== */
     public PersonView(PersonService personService) {
         this.personService = personService;
         addClassName("person-view");
 
-        /* ---------- FILTER-TOOLBAR ---------- */
+        // Filter toolbar
         HorizontalLayout filters = new HorizontalLayout();
         lastNameFilter.setPlaceholder("Search by last name...");
         genderFilter.setItems("", "M", "F", "U");
@@ -80,111 +76,128 @@ public class PersonView extends Div implements BeforeEnterObserver {
         filters.add(lastNameFilter, genderFilter);
         add(filters);
 
-        /* ---------- main layout ---------- */
+        // Main split layout
         SplitLayout split = new SplitLayout();
         createGridLayout(split);
         createEditorLayout(split);
         add(split);
 
-        /* ---------- grid ---------- */
+        // Grid configuration
         grid.addColumn(Person::getFirstName).setHeader("First Name").setAutoWidth(true);
         grid.addColumn(Person::getLastName).setHeader("Last Name").setAutoWidth(true);
         grid.addColumn(Person::getEmail).setHeader("Email").setAutoWidth(true);
         grid.addColumn(Person::getAge).setHeader("Age").setAutoWidth(true);
         grid.addColumn(Person::getGender).setHeader("Gender").setAutoWidth(true);
-
-        grid.setItems(q -> personService
-                .listPersons(
-                        VaadinSpringDataHelpers.toSpringPageRequest(q),
-                        lastNameFilter.getValue(),
-                        genderFilter.isEmpty() ? null : genderFilter.getValue())
-                .stream());
-
+        // Delete action column
+        grid.addComponentColumn(person -> {
+            Button delete = new Button("Delete", e -> {
+                personService.delete(person.getId());
+                clearForm();
+                refreshGrid();
+                Notification.show("Deleted", 2000, Position.TOP_CENTER);
+            });
+            delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            return delete;
+        }).setHeader("Actions");
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
-
-        grid.asSingleSelect().addValueChangeListener(ev -> {
-            if (ev.getValue() != null) {
-                UI.getCurrent().navigate(String.format(PERSON_EDIT_URL, ev.getValue().getId()));
+        grid.addColumn(Person::getFirstName).setHeader("First Name").setAutoWidth(true);
+        grid.addColumn(Person::getLastName).setHeader("Last Name").setAutoWidth(true);
+        grid.addColumn(Person::getEmail).setHeader("Email").setAutoWidth(true);
+        grid.addColumn(Person::getAge).setHeader("Age").setAutoWidth(true);
+        grid.addColumn(Person::getGender).setHeader("Gender").setAutoWidth(true);
+        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+        grid.setItems(query ->
+                personService.listPersons(
+                        VaadinSpringDataHelpers.toSpringPageRequest(query),
+                        lastNameFilter.getValue(),
+                        genderFilter.isEmpty() ? null : genderFilter.getValue()
+                ).stream()
+        );
+        grid.asSingleSelect().addValueChangeListener(event -> {
+            Person selected = event.getValue();
+            if (selected != null) {
+                currentPerson = selected;
+                binder.readBean(currentPerson);
+                UI.getCurrent().navigate(String.format(PERSON_EDIT_URL, selected.getId()));
             } else {
                 clearForm();
                 UI.getCurrent().navigate(PersonView.class);
             }
         });
 
-        /* ---------- binder ---------- */
+        // Binder and field binding
         binder = new BeanValidationBinder<>(Person.class);
+        binder.bindInstanceFields(this);
+        // Manual binding for age field
+        binder.forField(ageField)
+                .bind(Person::getAge, (person, age) -> {});
 
-        age.setReadOnly(true);
-        binder.forField(age)
-                .bind(p -> Double.valueOf(p.getAge()), (p, v) -> {});
-
-        /* ---------- buttons ---------- */
+        // Buttons
         cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         cancel.addClickListener(e -> {
             clearForm();
-            refreshGrid();
         });
 
         save.addClickListener(e -> {
             try {
-                if (currentPerson == null) currentPerson = new Person();
+                if (currentPerson == null) {
+                    currentPerson = new Person();
+                }
                 binder.writeBean(currentPerson);
                 personService.save(currentPerson);
-                clearForm();
-                refreshGrid();
                 Notification.show("Saved", 2500, Position.BOTTOM_START);
+                clearForm();
+                grid.getDataProvider().refreshAll();
                 UI.getCurrent().navigate(PersonView.class);
             } catch (ObjectOptimisticLockingFailureException ex) {
-                Notification n = Notification.show("Save failed: record was modified by another user.");
+                Notification n = Notification.show("Save failed: concurrent modification error");
                 n.addThemeVariants(NotificationVariant.LUMO_ERROR);
             } catch (ValidationException ex) {
                 Notification.show("Please check the entered values");
             }
         });
 
-        /* ---------- filter-listeners ---------- */
         lastNameFilter.addValueChangeListener(e -> grid.getDataProvider().refreshAll());
         genderFilter.addValueChangeListener(e -> grid.getDataProvider().refreshAll());
     }
 
-    /* ---------------- URL-parameters ---------------- */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        Optional<Long> id = event.getRouteParameters().get(PERSON_ID).map(Long::parseLong);
-        if (id.isPresent()) {
-            personService.get(id.get())
-                    .ifPresentOrElse(this::populateForm,
-                            () -> {
-                                Notification.show("Person not found (ID=" + id.get() + ")", 3000,
-                                        Position.BOTTOM_START);
-                                refreshGrid();
-                                event.forwardTo(PersonView.class);
-                            });
+        Optional<Long> optionalId = event.getRouteParameters().get(PERSON_ID).map(Long::parseLong);
+        if (optionalId.isPresent()) {
+            personService.get(optionalId.get()).ifPresentOrElse(
+                    person -> {
+                        currentPerson = person;
+                        binder.readBean(person);
+                    },
+                    () -> {
+                        Notification.show("Person not found (ID=" + optionalId.get() + ")", 3000, Position.BOTTOM_START);
+                        refreshGrid();
+                        event.forwardTo(PersonView.class);
+                    }
+            );
         }
     }
 
-    /* ---------------- UI-helpers ------------------ */
     private void createEditorLayout(SplitLayout split) {
         Div editor = new Div();
         editor.addClassName("editor-layout");
-
         FormLayout form = new FormLayout();
-        firstName   = new TextField("First Name");
-        lastName    = new TextField("Last Name");
-        email       = new TextField("Email");
-        age         = new NumberField("Age");
 
-        gender      = new Select<>();
+        firstName = new TextField("First Name");
+        lastName  = new TextField("Last Name");
+        email     = new TextField("Email");
+        ageField  = new IntegerField("Age");
+        ageField.setReadOnly(true);
+        gender    = new Select<>();
         gender.setItems("M", "F", "U");
         gender.setLabel("Gender");
-
         dateOfBirth = new DatePicker("Date of Birth");
 
-        form.add(firstName, lastName, email, age, gender, dateOfBirth);
+        form.add(firstName, lastName, email, ageField, gender, dateOfBirth);
         editor.add(form, new HorizontalLayout(save, cancel));
-
         split.addToSecondary(editor);
     }
 
@@ -194,16 +207,19 @@ public class PersonView extends Div implements BeforeEnterObserver {
         split.addToPrimary(wrapper);
     }
 
+    private void clearForm() {
+        currentPerson = null;
+        binder.readBean(null);
+        grid.deselectAll();
+        refreshGrid();
+    }
+
     private void refreshGrid() {
         grid.getDataProvider().refreshAll();
     }
 
-    private void clearForm() {
-        populateForm(null);
-    }
-
-    private void populateForm(Person p) {
-        currentPerson = p;
-        binder.readBean(currentPerson);
+    private void populateForm(Person person) {
+        currentPerson = person;
+        binder.readBean(person);
     }
 }

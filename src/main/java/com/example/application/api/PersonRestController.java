@@ -35,7 +35,6 @@ public class PersonRestController {
                                @RequestParam Optional<String> gender,
                                Pageable pageable) {
 
-        // Build dynamic specification for filtering
         Specification<Person> spec = Specification.where(null);
 
         if (lastName.isPresent() && !lastName.get().isBlank()) {
@@ -51,7 +50,8 @@ public class PersonRestController {
     /** GET /api/persons/{id} */
     @GetMapping("/{id}")
     public Person get(@PathVariable Long id) {
-        return service.get(id).orElseThrow(() -> new PersonNotFoundException(id));
+        return service.get(id)
+                .orElseThrow(() -> new PersonNotFoundException(id));
     }
 
     /* ───────────────────────────────────────────────
@@ -66,13 +66,23 @@ public class PersonRestController {
 
     @PutMapping("/{id}")
     public Person update(@PathVariable Long id,
-                         @Validated @RequestBody Person person) {
+                         @Validated @RequestBody Person dto) {
 
-        if (service.get(id).isEmpty())
-            throw new PersonNotFoundException(id);
+        Person existing = service.get(id)
+                .orElseThrow(() -> new PersonNotFoundException(id));
 
-        person.setId(id);
-        return service.save(person);
+        // copy updatable fields from DTO to existing entity
+        existing.setFirstName(dto.getFirstName());
+        existing.setLastName(dto.getLastName());
+        existing.setDateOfBirth(dto.getDateOfBirth());
+        existing.setGender(dto.getGender());
+        existing.setEmail(dto.getEmail());
+        existing.setPhone(dto.getPhone());
+        existing.setOccupation(dto.getOccupation());
+        existing.setRole(dto.getRole());
+        existing.setImportant(dto.getImportant());
+
+        return service.save(existing);
     }
 
     @DeleteMapping("/{id}")
@@ -83,6 +93,8 @@ public class PersonRestController {
     /* 404 Exception */
     @ResponseStatus(HttpStatus.NOT_FOUND)
     private static class PersonNotFoundException extends RuntimeException {
-        PersonNotFoundException(Long id) { super("Person not found: " + id); }
+        PersonNotFoundException(Long id) {
+            super("Person not found: " + id);
+        }
     }
 }
