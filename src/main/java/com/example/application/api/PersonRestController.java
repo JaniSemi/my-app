@@ -1,17 +1,17 @@
 package com.example.application.api;
 
 import com.example.application.data.Person;
+import com.example.application.data.PersonSpecifications;
 import com.example.application.services.PersonService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Optional;
 
-/**
- * REST – rajapinta Person-entiteetille.
- * Polun alkuosa /api/persons on määritelty @RequestMapping-tasolla.
- */
 @RestController
 @RequestMapping("/api/persons")
 public class PersonRestController {
@@ -22,40 +22,52 @@ public class PersonRestController {
         this.service = service;
     }
 
-    /* --------------------------------------------------------------------
-     *  READ
-     * ------------------------------------------------------------------ */
+    /* ───────────────────────────────────────────────
+     *  READ – listaus & yksittäinen
+     * ───────────────────────────────────────────── */
 
-    /** GET /api/persons  – kaikki henkilöt ilman sivutusta. */
+    /**
+     * GET /api/persons
+     *  – tukee query-parametreja ?lastName= … &gender= … &page= … &size= …
+     */
     @GetMapping
-    public List<Person> getAll() {
-        return service.list();
+    public Page<Person> getAll(@RequestParam Optional<String> lastName,
+                               @RequestParam Optional<String> gender,
+                               Pageable pageable) {
+
+        /* 1) Kootaan dynaaminen Specification */
+        Specification<Person> spec = Specification.where(null);
+
+        if (lastName.isPresent() && !lastName.get().isBlank()) {
+            spec = spec.and(PersonSpecifications.lastNameContains(lastName.get()));
+        }
+        if (gender.isPresent() && !gender.get().isBlank()) {
+            spec = spec.and(PersonSpecifications.genderEquals(gender.get()));
+        }
+
+        /* 2) Jos ei filttereitä → palautetaan kaikki */
+        if (spec == null) {
+            return service.listPersons(pageable);        // jo olemassa
+        }
+        return service.listPersons(pageable);      // uusi metodi
     }
 
-    /** GET /api/persons/{id} – yksittäinen henkilö. */
+    /** GET /api/persons/{id} */
     @GetMapping("/{id}")
     public Person get(@PathVariable Long id) {
-        return service.get(id)
-                .orElseThrow(() -> new PersonNotFoundException(id));
+        return service.get(id).orElseThrow(() -> new PersonNotFoundException(id));
     }
 
-    /* --------------------------------------------------------------------
-     *  CREATE
-     * ------------------------------------------------------------------ */
+    /* ───────────────────────────────────────────────
+     *  CREATE / UPDATE / DELETE – entisellään
+     * ───────────────────────────────────────────── */
 
-    /** POST /api/persons – luo uusi henkilö. */
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public Person create(@Validated @RequestBody Person person) {
-        // person.getId() on null → tallennetaan uutena
         return service.save(person);
     }
 
-    /* --------------------------------------------------------------------
-     *  UPDATE
-     * ------------------------------------------------------------------ */
-
-    /** PUT /api/persons/{id} – päivitä olemassa oleva henkilö. */
     @PutMapping("/{id}")
     public Person update(@PathVariable Long id,
                          @Validated @RequestBody Person person) {
@@ -63,28 +75,18 @@ public class PersonRestController {
         if (service.get(id).isEmpty())
             throw new PersonNotFoundException(id);
 
-        person.setId(id);          // varmistetaan oikea id
+        person.setId(id);
         return service.save(person);
     }
 
-    /* --------------------------------------------------------------------
-     *  DELETE
-     * ------------------------------------------------------------------ */
-
-    /** DELETE /api/persons/{id} – poista henkilö. */
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
 
-    /* --------------------------------------------------------------------
-     *  404 -poikkeus
-     * ------------------------------------------------------------------ */
-
+    /* 404 */
     @ResponseStatus(HttpStatus.NOT_FOUND)
     private static class PersonNotFoundException extends RuntimeException {
-        PersonNotFoundException(Long id) {
-            super("Henkilöä ei löytynyt: " + id);
-        }
+        PersonNotFoundException(Long id) { super("Henkilöä ei löytynyt: " + id); }
     }
 }

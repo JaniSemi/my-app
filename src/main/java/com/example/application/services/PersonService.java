@@ -73,9 +73,9 @@ public class PersonService {
      *  -----------  Listaus & sivutus  -------------------------------------
      * ==================================================================== */
 
-    /** Paginoitu listaus. */
+    /** Paginoitu listaus filttereillä. */
     public Page<Person> listPersons(Pageable pageable) {
-        return repository.findAll(pageable);
+        return repository.findAll(filter, pageable);
     }
 
     /** Kaikki ilman sivutusta (alias listAll). */
@@ -112,5 +112,8 @@ public class PersonService {
                     cb.equal(root.get("gender"), genderFilter));
         }
         return repository.findAll(spec, pageable);
+    }
+
+    public Page<Person> listPersons(Pageable pageable) {
     }
 }
