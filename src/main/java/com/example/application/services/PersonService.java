@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Sovellus­logiikka Person-entiteetille.
+ * Sovelluslogiikka Person-entiteetille.
  * Sisältää kaksi nimisettiä:
  *   • savePerson / findPerson / deletePerson – käytössä UI-näkymissä
  *   • save / get / delete / list            – käytössä REST-rajapinnoissa
@@ -64,7 +64,7 @@ public class PersonService {
     }
 
     public List<Person> findAll() {
-        // oletus­järjestys sukunimi + etunimi
+        // oletusjärjestys sukunimi + etunimi
         return repository.findAll(Sort.by("lastName", "firstName"));
     }
 

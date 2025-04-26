@@ -30,7 +30,7 @@ public class Application implements AppShellConfigurator {
         return new SqlDataSourceScriptDatabaseInitializer(dataSource, props) {
             @Override
             public boolean initializeDatabase() {
-                // Ajetaan data.sql vain jos kantaan ei ole vielä henkilöitä
+                // Ajetaan data.sql vain jos kantaan ei ole vielä lisätty henkilöitä
                 return personRepository.count() == 0 && super.initializeDatabase();
             }
         };

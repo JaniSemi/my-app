@@ -20,9 +20,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-/**
- * Sovelluksen päälayout – vasemman laidan sivunavigaatio + otsikkopalkki.
- */
+/** Sovelluksen päälayout – vasemman laidan navigaatio + otsikkopalkki. */
 @Layout
 @AnonymousAllowed
 public class MainLayout extends AppLayout {
@@ -64,16 +62,22 @@ public class MainLayout extends AppLayout {
     private SideNav createNavigation() {
         SideNav nav = new SideNav();
 
+        /*  --- Huom! SideNavItem kannattaa luoda merkkijono-reitillä,
+             koska lista-näkymä ja editori jakavat saman luokan   --- */
+
         nav.addItem(new SideNavItem("Home", HomeView.class, icon(VaadinIcon.HOME)));
-        nav.addItem(new SideNavItem("Persons", HenkiloidenmittaustiedotView.class,
-                icon(VaadinIcon.USERS)));
-        nav.addItem(new SideNavItem("Measurements", MeasurementView.class,
+
+        //  persons – listan parametriton reitti
+        nav.addItem(new SideNavItem("Persons", "persons", icon(VaadinIcon.USERS)));
+
+        //  measurements – listan parametriton reitti
+        nav.addItem(new SideNavItem("Measurements", "measurements",
                 icon(VaadinIcon.LINE_CHART)));
 
         return nav;
     }
 
-    /** Pieni apu-metodi ikonien luomiseen yhtenäisellä koolla. */
+    /** Pieni apu ikonien luomiseen yhtenäisellä koolla. */
     private Component icon(VaadinIcon vIcon) {
         Icon icon = vIcon.create();
         icon.setSize("var(--lumo-icon-size-s)");
@@ -85,7 +89,7 @@ public class MainLayout extends AppLayout {
     }
 
     /* ------------------------------------------------------------------ */
-    /* Näytettävän näkymän otsikko                                         */
+    /*  Näytettävän näkymän otsikko                                        */
     /* ------------------------------------------------------------------ */
     @Override
     protected void afterNavigation() {
