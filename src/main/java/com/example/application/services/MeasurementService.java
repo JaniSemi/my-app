@@ -56,6 +56,7 @@ public class MeasurementService {
         return repository.findByPersonId(personId);
     }
 
+    /** Kaikki mittaukset ilman paginointia. */
     public List<Measurement> list() {
         return repository.findAll();
     }
@@ -68,13 +69,13 @@ public class MeasurementService {
      *  LISTA SUODATTIMELLA (personId)
      * ======================================================== */
     public Page<Measurement> list(Pageable pageable, Long personId) {
-
-        Specification<Measurement> spec = Specification.where(null);
-
-        if (personId != null) {
-            spec = spec.and((root, q, cb) ->
-                    cb.equal(root.get("person").get("id"), personId));
+        if (personId == null) {
+            return repository.findAll(pageable);
         }
+
+        Specification<Measurement> spec = (root, query, cb) ->
+                cb.equal(root.get("person").get("id"), personId);
+
         return repository.findAll(spec, pageable);
     }
 }

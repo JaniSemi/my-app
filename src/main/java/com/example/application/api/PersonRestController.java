@@ -45,11 +45,8 @@ public class PersonRestController {
             spec = spec.and(PersonSpecifications.genderEquals(gender.get()));
         }
 
-        /* 2) Jos ei filttereitä → palautetaan kaikki */
-        if (spec == null) {
-            return service.listPersons(pageable);        // jo olemassa
-        }
-        return service.listPersons(pageable);      // uusi metodi
+        /* 2) Käytetään spesifikaatiota haussa */
+        return service.listPersons(pageable, spec);
     }
 
     /** GET /api/persons/{id} */
