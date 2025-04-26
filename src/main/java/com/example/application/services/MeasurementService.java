@@ -63,4 +63,18 @@ public class MeasurementService {
     public long count() {
         return repository.count();
     }
+
+    /* ==========================================================
+     *  LISTA SUODATTIMELLA (personId)
+     * ======================================================== */
+    public Page<Measurement> list(Pageable pageable, Long personId) {
+
+        Specification<Measurement> spec = Specification.where(null);
+
+        if (personId != null) {
+            spec = spec.and((root, q, cb) ->
+                    cb.equal(root.get("person").get("id"), personId));
+        }
+        return repository.findAll(spec, pageable);
+    }
 }

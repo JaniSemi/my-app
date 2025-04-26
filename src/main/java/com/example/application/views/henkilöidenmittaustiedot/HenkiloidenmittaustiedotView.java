@@ -28,6 +28,7 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -41,20 +42,23 @@ import java.util.Optional;
 @Uses(Icon.class)
 public class HenkiloidenmittaustiedotView extends Div implements BeforeEnterObserver {
 
-    /* ------------------- reitti-parametrit ------------------- */
+    /* ------------- konstanssit ------------- */
     private static final String PERSON_ID       = "personID";
-    private static final String PERSON_EDIT_ROUTE = "persons/%s/edit";
+    private static final String PERSON_EDIT_URL = "persons/%s/edit";
 
-    /* ------------------- komponentit ------------------------- */
+    /* ------------- filterit ---------------- */
+    private final TextField      lastNameFilter = new TextField();
+    private final Select<String> genderFilter   = new Select<>();
+
+    /* ------------- grid + lomake ----------- */
     private final Grid<Person> grid = new Grid<>(Person.class, false);
 
     private TextField  firstName;
     private TextField  lastName;
     private TextField  email;
-
-    private NumberField ageField;            // ★ changed – eri nimi
+    private NumberField age;
     private Select<String> gender;
-    private DatePicker    dateOfBirth;
+    private DatePicker dateOfBirth;
 
     private final Button cancel = new Button("Peru");
     private final Button save   = new Button("Tallenna");
@@ -64,11 +68,20 @@ public class HenkiloidenmittaustiedotView extends Div implements BeforeEnterObse
 
     private final PersonService personService;
 
-    /* ---------------------------------------------------------- */
+    /* =================================================================== */
     public HenkiloidenmittaustiedotView(PersonService personService) {
         this.personService = personService;
         addClassName("henkilöidenmittaustiedot-view");
 
+        /* ---------- FILTER-TOOLBAR ---------- */
+        HorizontalLayout filters = new HorizontalLayout();
+        lastNameFilter.setPlaceholder("Hae sukunimellä…");
+        genderFilter.setItems("", "M", "F", "U");
+        genderFilter.setPlaceholder("Sukupuoli");
+        filters.add(lastNameFilter, genderFilter);
+        add(filters);
+
+        /* ---------- päälayout ---------- */
         SplitLayout split = new SplitLayout();
         createGridLayout(split);
         createEditorLayout(split);
@@ -78,16 +91,21 @@ public class HenkiloidenmittaustiedotView extends Div implements BeforeEnterObse
         grid.addColumn(Person::getFirstName).setHeader("Etunimi").setAutoWidth(true);
         grid.addColumn(Person::getLastName).setHeader("Sukunimi").setAutoWidth(true);
         grid.addColumn(Person::getEmail).setHeader("Sähköposti").setAutoWidth(true);
-        grid.addColumn(p -> p.getAge()).setHeader("Ikä").setAutoWidth(true);        // int ok
+        grid.addColumn(Person::getAge).setHeader("Ikä").setAutoWidth(true);
         grid.addColumn(Person::getGender).setHeader("Sukupuoli").setAutoWidth(true);
 
-        grid.setItems(q ->
-                personService.listPersons(VaadinSpringDataHelpers.toSpringPageRequest(q)).stream());
+        grid.setItems(q -> personService
+                .listPersons(
+                        VaadinSpringDataHelpers.toSpringPageRequest(q),
+                        lastNameFilter.getValue(),
+                        genderFilter.isEmpty() ? null : genderFilter.getValue())
+                .stream());
+
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
 
         grid.asSingleSelect().addValueChangeListener(ev -> {
             if (ev.getValue() != null) {
-                UI.getCurrent().navigate(String.format(PERSON_EDIT_ROUTE, ev.getValue().getId()));
+                UI.getCurrent().navigate(String.format(PERSON_EDIT_URL, ev.getValue().getId()));
             } else {
                 clearForm();
                 UI.getCurrent().navigate(HenkiloidenmittaustiedotView.class);
@@ -97,15 +115,11 @@ public class HenkiloidenmittaustiedotView extends Div implements BeforeEnterObse
         /* ---------- binder ---------- */
         binder = new BeanValidationBinder<>(Person.class);
 
-        // 1) manuaalinen ikä-sidonta (int → Double)
-        binder.forField(ageField)
-                .bind(p -> Double.valueOf(p.getAge()), null);
-        ageField.setReadOnly(true);
+        age.setReadOnly(true);
+        binder.forField(age)                                    // ← FIX (Double vs int)
+                .bind(p -> Double.valueOf(p.getAge()), (p, v) -> {});
 
-        // 2) muut kentät automaattisesti
-        binder.bindInstanceFields(this);
-
-        /* ---------- buttons ---------- */
+        /* ---------- napit ---------- */
         cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
@@ -124,30 +138,35 @@ public class HenkiloidenmittaustiedotView extends Div implements BeforeEnterObse
                 Notification.show("Tallennettu", 2500, Position.BOTTOM_START);
                 UI.getCurrent().navigate(HenkiloidenmittaustiedotView.class);
             } catch (ObjectOptimisticLockingFailureException ex) {
-                Notification n = Notification.show(
-                        "Tallennus epäonnistui: tietue on jo muuttunut.");
+                Notification n = Notification.show("Tallennus epäonnistui: tietue muuttui jo toisella käyttäjällä.");
                 n.addThemeVariants(NotificationVariant.LUMO_ERROR);
             } catch (ValidationException ex) {
                 Notification.show("Tarkista syötetyt arvot");
             }
         });
+
+        /* ---------- filter-kuuntelijat ---------- */
+        lastNameFilter.addValueChangeListener(e -> grid.getDataProvider().refreshAll());
+        genderFilter.addValueChangeListener(e -> grid.getDataProvider().refreshAll());
     }
 
-    /* -------------------- URL-parametrin käsittely ---------------------- */
+    /* ---------------- URL-parametrit ---------------- */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         Optional<Long> id = event.getRouteParameters().get(PERSON_ID).map(Long::parseLong);
-        id.ifPresent(personId ->
-                personService.findPerson(personId)
-                        .ifPresentOrElse(this::populateForm, () -> {
-                            Notification.show("Henkilöä ei löytynyt (ID=" + personId + ")", 3000,
-                                    Position.BOTTOM_START);
-                            refreshGrid();
-                            event.forwardTo(HenkiloidenmittaustiedotView.class);
-                        }));
+        if (id.isPresent()) {
+            personService.findPerson(id.get())
+                    .ifPresentOrElse(this::populateForm,
+                            () -> {
+                                Notification.show("Henkilöä ei löytynyt (ID=" + id.get() + ")", 3000,
+                                        Position.BOTTOM_START);
+                                refreshGrid();
+                                event.forwardTo(HenkiloidenmittaustiedotView.class);
+                            });
+        }
     }
 
-    /* -------------------- UI helpers ----------------------------------- */
+    /* ---------------- UI-helperit ------------------ */
     private void createEditorLayout(SplitLayout split) {
         Div editor = new Div();
         editor.addClassName("editor-layout");
@@ -156,13 +175,15 @@ public class HenkiloidenmittaustiedotView extends Div implements BeforeEnterObse
         firstName   = new TextField("Etunimi");
         lastName    = new TextField("Sukunimi");
         email       = new TextField("Sähköposti");
-        ageField    = new NumberField("Ikä");                         // ★ changed
-        gender      = new Select<>();
-        gender.setLabel("Sukupuoli");
+        age         = new NumberField("Ikä");
+
+        gender      = new Select<>();                     // ← FIX (tyypin päättely)
         gender.setItems("M", "F", "U");
+        gender.setLabel("Sukupuoli");
+
         dateOfBirth = new DatePicker("Syntymäpäivä");
 
-        form.add(firstName, lastName, email, ageField, gender, dateOfBirth);
+        form.add(firstName, lastName, email, age, gender, dateOfBirth);
         editor.add(form, new HorizontalLayout(save, cancel));
 
         split.addToSecondary(editor);

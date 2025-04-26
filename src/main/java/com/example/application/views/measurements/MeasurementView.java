@@ -5,7 +5,6 @@ import com.example.application.data.Person;
 import com.example.application.services.MeasurementService;
 import com.example.application.services.PersonService;
 import com.example.application.views.MainLayout;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -28,6 +27,7 @@ import com.vaadin.flow.data.renderer.TextRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -35,12 +35,15 @@ import org.vaadin.lineawesome.LineAwesomeIconUrl;
 
 @PageTitle("Mittaukset")
 @Route(value = "measurements", layout = MainLayout.class)
-@RouteAlias(value = "measurements/:measurementID?", layout = MainLayout.class) // (2)
-@PermitAll                                                                              // (1)
+@RouteAlias(value = "measurements/:measurementID?", layout = MainLayout.class)
+@PermitAll
 @Uses(Icon.class)
 public class MeasurementView extends Div {
 
     private final Grid<Measurement> grid = new Grid<>(Measurement.class, false);
+
+    /* -------- filtteri -------- */
+    private final ComboBox<Person> personFilter = new ComboBox<>("Henkilö");
 
     /* -------- lomake -------- */
     private ComboBox<Person> person;
@@ -57,45 +60,55 @@ public class MeasurementView extends Div {
     private final MeasurementService measurementService;
     private final PersonService      personService;
 
-    /* =================================================================== */
+    /* =================================================== */
     public MeasurementView(MeasurementService measurementService,
                            PersonService personService) {
+
         this.measurementService = measurementService;
         this.personService      = personService;
-
         addClassName("measurement-view");
 
+        /* ---------- FILTER-TOOLBAR ---------- */
+        HorizontalLayout filters = new HorizontalLayout();
+        personFilter.setItems(personService.findAll());
+        personFilter.setItemLabelGenerator(p -> p.getFirstName() + " " + p.getLastName());
+        personFilter.setPlaceholder("Suodata henkilön mukaan");
+        filters.add(personFilter);
+        add(filters);
+
+        /* ---------- pää-layout ---------- */
         SplitLayout split = new SplitLayout();
         createGrid(split);
         createEditor(split);
         add(split);
 
-        /* ------------- binder ------------- */
+        /* ---------- binder ---------- */
         binder = new BeanValidationBinder<>(Measurement.class);
-
-        // automaattiset kentät
         binder.bindInstanceFields(this);
 
-        // person-ComboBox täytyy sitoa käsin (3)
+        // person-ComboBox manuaalinen binding
         binder.forField(person)
                 .asRequired("Valitse henkilö")
                 .bind(Measurement::getPerson, Measurement::setPerson);
 
-        /* ------------- grid rivin valinta ------------- */
+        /* ---------- grid selektio ---------- */
         grid.asSingleSelect().addValueChangeListener(e -> {
             current = e.getValue();
             binder.readBean(current);
         });
 
-        /* ------------- napit ------------- */
+        /* ---------- napit ---------- */
         cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         cancel.addClickListener(e -> clearForm());
         save.addClickListener(e -> saveCurrent());
+
+        /* ---------- filtteri-kuuntelija ---------- */
+        personFilter.addValueChangeListener(e -> grid.getDataProvider().refreshAll());
     }
 
-    /* =================================================================== */
+    /* =================================================== */
     /* GRID */
     private void createGrid(SplitLayout split) {
         grid.addColumn(new TextRenderer<>(m ->
@@ -111,15 +124,17 @@ public class MeasurementView extends Div {
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
 
         grid.setItems(q -> measurementService
-                .list(VaadinSpringDataHelpers.toSpringPageRequest(q))          // (4)
-                .stream());
+                .list(
+                        VaadinSpringDataHelpers.toSpringPageRequest(q),
+                        personFilter.getValue() != null ? personFilter.getValue().getId() : null
+                ).stream());
 
         Div wrapper = new Div(grid);
         wrapper.addClassName("grid-wrapper");
         split.addToPrimary(wrapper);
     }
 
-    /* =================================================================== */
+    /* =================================================== */
     /* EDITOR */
     private void createEditor(SplitLayout split) {
         Div editorWrap = new Div();
@@ -151,7 +166,7 @@ public class MeasurementView extends Div {
         return hl;
     }
 
-    /* =================================================================== */
+    /* =================================================== */
     /* HELPERS */
     private void clearForm() {
         current = null;

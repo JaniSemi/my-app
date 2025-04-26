@@ -5,6 +5,7 @@ import com.example.application.data.PersonRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -94,4 +95,22 @@ public class PersonService {
         return repository.findAll(filter, pageable);
     }
     */
+
+    public Page<Person> listPersons(Pageable pageable,
+                                    String lastNameFilter,
+                                    String genderFilter) {
+
+        Specification<Person> spec = Specification.where(null);
+
+        if (lastNameFilter != null && !lastNameFilter.isBlank()) {
+            spec = spec.and((root, q, cb) ->
+                    cb.like(cb.lower(root.get("lastName")),
+                            "%" + lastNameFilter.toLowerCase() + "%"));
+        }
+        if (genderFilter != null && !genderFilter.isBlank()) {
+            spec = spec.and((root, q, cb) ->
+                    cb.equal(root.get("gender"), genderFilter));
+        }
+        return repository.findAll(spec, pageable);
+    }
 }
