@@ -1,2 +1,65 @@
 @import url('./main-layout.css');
-@import url('./views/henkilöidenmittaustiedot-view.css');
+
+/* Perusfontti ja värit */
+html {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Headerin tyyli */
+header {
+    background-color: #004080;
+    color: white;
+    padding: 1rem;
+}
+
+/* Footerin tyyli */
+footer {
+    background-color: #004080;
+    color: white;
+    text-align: center;
+    padding: 0.5rem;
+}
+
+/* Napit */
+vaadin-button {
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+/* Gridin header */
+vaadin-grid::part(header-cell) {
+    background-color: #e0e0e0;
+    font-weight: bold;
+}
+
+/* Lomakekenttien marginaali */
+vaadin-form-layout vaadin-text-field,
+vaadin-form-layout vaadin-select,
+vaadin-form-layout vaadin-date-picker,
+vaadin-form-layout vaadin-number-field {
+    margin-bottom: 1rem;
+}
+
+vaadin-grid {
+    height: 100%;
+}
+
+.editor-layout {
+    display: flex;
+    flex-direction: column;
+    width: 400px;
+}
+
+.grid-wrapper {
+    width: 100%;
+}
+
+/* Button layout yhtenäiseksi */
+.button-layout {
+    width: 100%;
+    flex-wrap: wrap;
+    background-color: var(--lumo-contrast-5pct);
+    padding: var(--lumo-space-s) var(--lumo-space-l);
+    gap: var(--lumo-space-m);
+}

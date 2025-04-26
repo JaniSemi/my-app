@@ -1,8 +1,6 @@
 package com.example.application.views;
 
 import com.example.application.views.home.HomeView;
-import com.example.application.views.henkilöidenmittaustiedot.HenkiloidenmittaustiedotView;
-import com.example.application.views.measurements.MeasurementView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -85,7 +83,9 @@ public class MainLayout extends AppLayout {
     }
 
     private Footer createFooter() {
-        return new Footer();
+        Footer footer = new Footer();
+        footer.add(new Span("© 2025 Vaadinharjoitus rock rock"));
+        return footer;
     }
 
     /* ------------------------------------------------------------------ */
