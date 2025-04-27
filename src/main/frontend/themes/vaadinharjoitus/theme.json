@@ -5,10 +5,7 @@
     "spacing",
     "badge"
   ],
-  "assets": {
-    "css": [
-      "./styles.css",
-      "./main-layout.css"
-    ]
-  }
+  "import": [
+    "./styles.css"
+  ]
 }

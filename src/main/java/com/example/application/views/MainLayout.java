@@ -28,6 +28,7 @@ public class MainLayout extends AppLayout {
         setPrimarySection(Section.DRAWER);
         addHeaderContent();
         addDrawerContent();
+        createGlobalFooter();  // <-- tähän lisätty global footer
     }
 
     private void addHeaderContent() {
@@ -51,16 +52,8 @@ public class MainLayout extends AppLayout {
 
         Scroller scroller = new Scroller(createNavigation());
 
-        Footer footer = new Footer(new Span("© 2025 Measurement App"));
-        footer.addClassNames(
-                LumoUtility.Background.CONTRAST_5,
-                LumoUtility.Padding.Vertical.SMALL
-        );
-        footer.getStyle()
-                .set("color", "white")
-                .set("text-align", "center");
-
-        addToDrawer(header, scroller, footer);
+        // Drawer-footer poistettu, pidetään vain header + nav-lista
+        addToDrawer(header, scroller);
     }
 
     private SideNav createNavigation() {
@@ -77,6 +70,17 @@ public class MainLayout extends AppLayout {
         return icon;
     }
 
+    /**
+     * Luo footerin, joka lisätään AppLayoutin root-elementtiin
+     * ja joka levittäytyy koko sivun leveydelle.
+     */
+    private void createGlobalFooter() {
+        Footer globalFooter = new Footer(new Span("© 2025 Measurement App"));
+        globalFooter.addClassName("global-footer");
+        // Liitetään light-DOMiin AppLayoutin perään
+        getElement().appendChild(globalFooter.getElement());
+    }
+
     @Override
     protected void afterNavigation() {
         super.afterNavigation();
@@ -84,7 +88,9 @@ public class MainLayout extends AppLayout {
     }
 
     private String getCurrentPageTitle() {
-        var annotation = getContent().getClass().getAnnotation(com.vaadin.flow.router.PageTitle.class);
+        var annotation = getContent()
+                .getClass()
+                .getAnnotation(com.vaadin.flow.router.PageTitle.class);
         return annotation != null ? annotation.value() : "";
     }
 }

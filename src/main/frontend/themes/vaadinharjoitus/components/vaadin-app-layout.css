@@ -1,0 +1,14 @@
+/* Navbarin tausta ja teksti */
+vaadin-app-layout::part(navbar) {
+    background-color: #004080;
+    color: white;
+    padding: var(--lumo-space-m);
+}
+
+/* Drawer‐footer (footer slot="drawer") */
+vaadin-app-layout::part(drawer) ::slotted(footer[slot="drawer"]) {
+    background-color: #004080;
+    color: white;
+    text-align: center;
+    padding: var(--lumo-space-s);
+}

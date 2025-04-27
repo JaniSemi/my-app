@@ -6,19 +6,37 @@ html {
     background-color: #f8f9fa;
 }
 
-/* Headerin tyyli */
+/* Headerin tyyli
 header {
     background-color: #004080;
     color: white;
     padding: 1rem;
-}
+}*/
 
-/* Footerin tyyli */
+/* Footerin tyyli
 footer {
     background-color: #004080;
     color: white;
     text-align: center;
     padding: 0.5rem;
+}*/
+
+/* Kiinnitä footer koko sivun alaosaan */
+.global-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #004080;
+    color: white;
+    text-align: center;
+    padding: var(--lumo-space-s);
+    z-index: 1000;
+}
+
+/* Vältä, että sisältö menee footerin alle */
+#outlet, vaadin-app-layout {
+    padding-bottom: var(--lumo-size-xl);
 }
 
 /* Napit */
